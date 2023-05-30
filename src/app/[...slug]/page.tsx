@@ -24,18 +24,20 @@ const PostLayout = ({params}: { params: { slug: string[] } }) => {
 
   return (
     <section>
-      <div className={styles.article__heading}>
-        <div className={styles.article__heading__bar}>
-          <p>
-            <time dateTime={post.publishedAt}>
-              {format(parseISO(post.publishedAt), 'LLLL d, yyyy')}
-            </time>
-            &nbsp;by Max van Essen
-          </p>
-        </div>
-        <h1>{post.title}</h1>
-      </div>
       <article>
+        <p>
+          <time dateTime={post.publishedAt}>
+            {format(parseISO(post.publishedAt), 'LLLL d, yyyy')}
+          </time>
+          &nbsp;by Max van Essen
+        </p>
+        <h1 className="mb-2">{post.title}</h1>
+        {post.summary && (
+          <p className="text-xl mt-0 text-slate-700 dark:text-slate-200">
+            {post.summary}
+          </p>
+        )}
+        <hr className="my-4" />
         <Content/>
       </article>
     </section>
