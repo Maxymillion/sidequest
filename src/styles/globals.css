@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+section{
+  @apply prose dark:prose-invert;
+}

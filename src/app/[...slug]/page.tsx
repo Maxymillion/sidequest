@@ -1,60 +1,45 @@
-import {notFound} from "next/navigation"
-import {Metadata} from "next"
-import {allPages} from "contentlayer/generated"
+// @ts-nocheck
+import {format, parseISO} from 'date-fns'
+import {allPosts, Post} from 'contentlayer/generated'
+import {getMDXComponent} from 'next-contentlayer/hooks'
+import {notFound} from "next/navigation";
+import styles from "./Article.module.scss";
 
-import {Mdx} from "@/components/mdx-components"
+export const generateStaticParams = async () => allPosts.map((post) => ({slug: post._raw.flattenedPath.split("/")}))
 
-interface PageProps {
-    params: {
-        slug: string[]
-    }
+export const generateMetadata = ({params}) => {
+  const post = allPosts.find((post: Post) => post._raw.flattenedPath === params.slug.join("/"))
+  if (!post) {
+    return null;
+  }
+  return {title: post.title}
 }
 
-async function getPageFromParams(params: PageProps["params"]) {
-    const slug = params?.slug?.join("/")
-    const page = allPages.find((page) => page.slugAsParams === slug)
+const PostLayout = ({params}: { params: { slug: string[] } }) => {
+  const post = allPosts.find((post) => post._raw.flattenedPath === params.slug.join("/"))
+  if (!post) {
+    return notFound();
+  }
+  const Content = getMDXComponent(post.body.code)
 
-    if (!page) {
-        null
-    }
-
-    return page
+  return (
+    <section>
+      <div className={styles.article__heading}>
+        <div className={styles.article__heading__bar}>
+          <p>
+            <time dateTime={post.publishedAt}>
+              {format(parseISO(post.publishedAt), 'LLLL d, yyyy')}
+            </time>
+            &nbsp;by Max van Essen
+          </p>
+        </div>
+        <h1>{post.title}</h1>
+      </div>
+      <article>
+        <Content/>
+      </article>
+    </section>
+  )
 }
 
-export async function generateMetadata({
-                                           params,
-                                       }: PageProps): Promise<Metadata> {
-    const page = await getPageFromParams(params)
-
-    if (!page) {
-        return {}
-    }
-
-    return {
-        title: page.title,
-        description: page.description,
-    }
-}
-
-export async function generateStaticParams(): Promise<PageProps["params"][]> {
-    return allPages.map((page) => ({
-        slug: page.slugAsParams.split("/"),
-    }))
-}
-
-export default async function PagePage({params}: PageProps) {
-    const page = await getPageFromParams(params)
-
-    if (!page) {
-        notFound()
-    }
-
-    return (
-        <article className="py-6 prose dark:prose-invert">
-            <h1>{page.title}</h1>
-            {page.description && <p className="text-xl">{page.description}</p>}
-            <hr/>
-            <Mdx code={page.body.code}/>
-        </article>
-    )
-}
+export default PostLayout

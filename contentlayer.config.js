@@ -1,54 +1,113 @@
-import { defineDocumentType, makeSource } from "contentlayer/source-files"
+import {defineDocumentType, defineNestedType, makeSource} from 'contentlayer/source-files'
+import remarkGfm from 'remark-gfm';
+import rehypePrettyCode from 'rehype-pretty-code';
+import rehypeSlug from 'rehype-slug';
+import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 
-/** @type {import('contentlayer/source-files').ComputedFields} */
 const computedFields = {
   slug: {
-    type: "string",
-    resolve: (doc) => `/${doc._raw.flattenedPath}`,
+    type: 'string',
+    resolve: (doc) => doc._raw.flattenedPath,
   },
-  slugAsParams: {
-    type: "string",
-    resolve: (doc) => doc._raw.flattenedPath.split("/").slice(1).join("/"),
+  structuredData: {
+    type: 'object',
+    resolve: (doc) => ({
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: doc.title,
+      datePublished: doc.publishedAt,
+      dateModified: doc.publishedAt,
+      description: doc.summary,
+      image: doc.image
+        ? `https://www.rever.sh${doc.image}`
+        : `https://www.rever.sh/api/og?title=${doc.title}`,
+      url: `https://www.rever.sh/posts/${doc._raw.flattenedPath}`,
+      author: {
+        '@type': 'Person',
+        name: 'Max van Essen',
+      },
+    }),
   },
-}
+};
 
-export const Page = defineDocumentType(() => ({
-  name: "Page",
-  filePathPattern: `pages/**/*.mdx`,
-  contentType: "mdx",
+
+const Tag = defineNestedType(() => ({
+  name: 'Tag',
   fields: {
-    title: {
-      type: "string",
-      required: true,
-    },
-    description: {
-      type: "string",
-    },
+    title: { type: 'string', required: true },
   },
-  computedFields,
 }))
 
-export const Post = defineDocumentType(() => ({
-  name: "Post",
-  filePathPattern: `posts/**/*.mdx`,
-  contentType: "mdx",
+const Category = defineNestedType(() => ({
+  name: 'Category',
+  fields: {
+    title: { type: 'string', required: true },
+  },
+}))
+
+const Post = defineDocumentType(() => ({
+  name: 'Post',
+  filePathPattern: `**/*.mdx`,
+  contentType: 'mdx',
   fields: {
     title: {
-      type: "string",
+      type: 'string',
+      description: 'The title of the post',
       required: true,
     },
-    description: {
-      type: "string",
-    },
-    date: {
-      type: "date",
+    summary: {
+      type: 'string',
       required: true,
+    },
+    publishedAt: {
+      type: 'string',
+      required: true,
+    },
+    categories: {
+      type: 'list',
+      of: Category,
+    },
+    tags: {
+      type: 'list',
+      of: Tag,
     },
   },
-  computedFields,
+  computedFields
 }))
 
 export default makeSource({
-  contentDirPath: "./content",
-  documentTypes: [Post, Page],
+  disableImportAliasWarning: true,
+  contentDirPath: 'content',
+  documentTypes: [Post],
+  mdx: {
+    remarkPlugins: [remarkGfm],
+    rehypePlugins: [
+      rehypeSlug,
+      [
+        rehypePrettyCode,
+        {
+          theme: 'slack-dark',
+          onVisitLine(node) {
+            if (node.children.length === 0) {
+              node.children = [{type: 'text', value: ' '}];
+            }
+          },
+          onVisitHighlightedLine(node) {
+            node.properties.className.push('line--highlighted');
+          },
+          onVisitHighlightedWord(node) {
+            node.properties.className = ['word--highlighted'];
+          },
+        },
+      ],
+      [
+        rehypeAutolinkHeadings,
+        {
+          properties: {
+            className: ['anchor'],
+          },
+        },
+      ],
+    ],
+  }
 })

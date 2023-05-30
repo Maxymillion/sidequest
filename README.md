@@ -1,2 +1,1 @@
-# Sidequest Blog
-...
+# Blog Project
