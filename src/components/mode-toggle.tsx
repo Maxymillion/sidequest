@@ -1,9 +1,9 @@
 "use client"
 
-import { useTheme } from "next-themes"
+import {useTheme} from "next-themes"
 
 export function ModeToggle() {
-  const { setTheme, theme } = useTheme()
+  const {setTheme, theme} = useTheme()
 
   return (
     <button
